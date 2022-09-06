@@ -25,3 +25,9 @@ class About:
         return self.__class__.__name__
 
 
+class Catalog:
+    def __call__(self, request):
+        return '200 OK', render('templates/catalog.html', date=request['date'])
+
+    def __repr__(self):
+        return self.__class__.__name__
