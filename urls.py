@@ -1,7 +1,8 @@
-from views import Index, About, Contact
+from views import Index, About, Contact, Catalog
 
 routes = {
     '/': Index(),
     '/about/': About(),
-    '/contact': Contact()
+    '/contact/': Contact(),
+    '/catalog/': Catalog()
 }
