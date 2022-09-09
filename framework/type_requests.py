@@ -29,7 +29,8 @@ class PostRequest:
                 result[k] = v
         return result
 
-    def get_wsgi_data(env) -> bytes:
+    @classmethod
+    def get_wsgi_data(cls, env) -> bytes:
         content_len_data = env.get('CONTENT_LENGTH')
         content_len = int(content_len_data) if content_len_data else 0
         print(content_len)
