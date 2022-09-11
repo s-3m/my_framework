@@ -1,12 +1,12 @@
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 
 
 def render(template_name, **kwargs):
-    # with open(template_name, encoding='utf-8') as f:
-    #     template = Template(f.read())
-    file_loader = FileSystemLoader('.')
+    file_loader = FileSystemLoader('templates')
     env = Environment(loader=file_loader)
     tm = env.get_template(template_name)
+    if 'context' not in kwargs:
+        kwargs['context'] = {}
     return tm.render(**kwargs)
 
 

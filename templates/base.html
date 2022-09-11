@@ -1,9 +1,16 @@
+{% set nav_bar = [
+    ('/', 'index', 'Главная'),
+    ('/catalog/', 'catalog', 'Каталог фильмов'),
+    ('/about/', 'about', 'О проекте'),
+    ('/contact/', 'contact', 'Контакты')
+] %}
+{% set active_page = active_page | default('index') %}
 
 <!DOCTYPE HTML>
 <html>
 
 <head>
-  <title>Главная</title>
+  <title>{{ context.title }}</title>
   <meta name="description" content="website description" />
   <meta name="keywords" content="website keywords, website keywords" />
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -336,12 +343,12 @@ table tr td
         <div id="logo_text">
           <!-- class="logo_colour", allows you to change the colour of the text -->
           <h1><a href="/">кино<span class="logo_colour">INFO</span></a></h1>
-          <h2>Сегодня - {{ date }}</h2>
+          <h2>Сегодня - {{ request.date }}</h2>
         </div>
       </div>
       <div id="menubar">
         <ul id="menu">
-          {% include 'templates/inc_top_menu.html' %}
+          {% include 'inc_top_menu.html' %}
         </ul>
       </div>
     </div>
@@ -377,10 +384,8 @@ table tr td
             {% endblock %}
 
     </div>
-          <div id="content_footer"></div>
-    <div id="footer">
-      <p><a href="index.html">Главная</a> | <a href="about.html">О проекте</a> | <a href="contact.html">Контакты</a></p>
-    </div>
+        <div id="content_footer"></div>
+        {% include 'inc_footer_menu.html' %}
   </div>
 </body>
 </html>
