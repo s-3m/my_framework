@@ -1,0 +1,7 @@
+<div id="footer">
+    <p>
+        {% for href, id, caption in nav_bar %}
+            <a href={{ href }}>{{ caption }}</a> {% if not loop.last %} | {% endif %}
+        {% endfor %}
+    </p>
+</div>

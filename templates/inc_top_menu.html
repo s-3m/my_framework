@@ -1,0 +1,8 @@
+
+<div id="menubar">
+  <ul id="menu">
+    {% for href, id, caption in nav_bar %}
+      <li {% if id == active_page %}class="selected"{% endif %}><a href={{href}}>{{caption}}</a>
+    {% endfor %}
+  </ul>
+</div>
