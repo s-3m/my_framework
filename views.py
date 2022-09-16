@@ -1,4 +1,8 @@
 from framework.templator import render
+from patterns.creational import Engine, Logger
+
+engine = Engine()
+logger = Logger('main')
 
 
 class Index:
@@ -30,8 +34,12 @@ class About:
 
 class Catalog:
     def __call__(self, request):
-        context = {'title': 'Каталог'}
-        return '200 OK', render('catalog.html', request=request)
+        context = {
+            'title': 'Каталог',
+            'genre': engine.genre
+        }
+        objects_list = engine.films
+        return '200 OK', render('catalog.html', request=request, context=context, objects_list=objects_list)
 
     def __repr__(self):
         return self.__class__.__name__
