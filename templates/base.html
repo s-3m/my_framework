@@ -360,6 +360,12 @@ table tr td
         <ul>
             {% for item in context.genre %}
                 <li><a href="#">{{ item.name }}</a></li>
+        </ul>
+
+        <h3>Жанры</h3>
+        <ul>
+            {% for item in context.genre %}
+                <li><a href="#">{{ item.name }}</a></li>
             {% endfor %}
         </ul>
 
@@ -368,7 +374,6 @@ table tr td
         <h5>January 1st, 2011</h5>
         <p>2011 sees the redesign of our website. Take a look around and let us know what you think.<br /><a href="#">Read more</a></p>
         <p></p>
-
         <h3>Search</h3>
         <form method="post" action="#" id="search_form">
           <p>
