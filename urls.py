@@ -1,4 +1,4 @@
-from views import Index, About, Contact, Catalog, CreateGenre, CreateFilm
+from views import Index, About, Contact, Catalog, CreateGenre, CreateFilm, CopyFilm
 
 routes = {
     '/': Index(),
@@ -6,5 +6,6 @@ routes = {
     '/contact/': Contact(),
     '/catalog/': Catalog(),
     '/AddGenre/': CreateGenre(),
-    '/AddFilm/': CreateFilm()
+    '/AddFilm/': CreateFilm(),
+    '/copy_film/': CopyFilm(),
 }

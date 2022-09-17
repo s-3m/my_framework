@@ -98,6 +98,11 @@ class Engine:
                 return item
             return None
 
+    def find_genre_by_name(self, genre_name):
+        for i in self.genre:
+            if i.name == genre_name:
+                return i
+
     @staticmethod
     def decode_value(val):
         val_b = bytes(val.replace('%', '=').replace("+", " "), 'UTF-8')
