@@ -4,5 +4,15 @@
 {% block content %}
     <div id="content">
     <h1>Каталог фильмов</h1>
+        <div style="display: flex; justify-content: flex-end"><a href="/AddFilm">+ Добавить фильм</a></div>
     </div>
+    {% if objects_list %}
+        <div class="films_container">
+            {% for film in objects_list %}
+                <div class="film" style="margin-bottom: 10px">
+                    {{ film.name }}, {{ film.genre.name }}, {{ film.director }} -- <span><a href="/copy_film/?name={{film.name}}">скопировать</a></span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 {% endblock %}
