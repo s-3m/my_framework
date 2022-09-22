@@ -5,14 +5,19 @@
     <div id="content">
     <h1>Каталог фильмов</h1>
         <div style="display: flex; justify-content: flex-end"><a href="/AddFilm">+ Добавить фильм</a></div>
+
+        {% if objects_list %}
+            <div class="films_container" style="display: flex; flex-wrap: wrap; max-width:100%;justify-content: space-around; margin-top: 20px">
+                {% for film in objects_list %}
+                    <div class="film_item" style="text-align: center; margin-bottom: 50px; flex: 0 0 50%; height: 200px; width: 200px; box-shadow: 11px 12px 14px 6px rgba(19, 20, 21, 0.2)">
+                        <div class="film_poster" style="height: 60%; text-align: center">POSTER IMG</div>
+                        <div class="film_name">{{ film.name }}</div>
+                        <div class="film_genre">Жанр: {{ film.genre.name }}</div>
+                        <div class="film_actors"> В ролях: {{ film.actor }}</div>
+                        <div class="film_director">Режиссер: {{ film.director }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
-    {% if objects_list %}
-        <div class="films_container">
-            {% for film in objects_list %}
-                <div class="film" style="margin-bottom: 10px">
-                    {{ film.name }}, {{ film.genre.name }}, {{ film.director }} -- <span><a href="/copy_film/?name={{film.name}}">скопировать</a></span>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
 {% endblock %}
