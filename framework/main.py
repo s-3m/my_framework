@@ -8,8 +8,9 @@ class PageNotFound:
 
 
 class BananaFramework:
-    def __init__(self, routes, fronts=None):
+    def __init__(self, routes, routes_dict, fronts=None):
         self.routes = routes
+        self.routes_dict = routes_dict
         self.fronts = fronts
 
     def __call__(self, environ, start_response):
@@ -21,6 +22,8 @@ class BananaFramework:
 
         if path in self.routes:
             view = self.routes[path]
+        elif path in self.routes_dict:
+            view = self.routes_dict[path]
         else:
             view = PageNotFound()
 
