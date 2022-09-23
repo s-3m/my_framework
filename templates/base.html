@@ -10,7 +10,7 @@
 <html>
 
 <head>
-  <title>{{ context.title }}</title>
+  <title>{% if title %}{{ title }}{% else %}{{ context.title }}{% endif %}</title>
   <meta name="description" content="website description" />
   <meta name="keywords" content="website keywords, website keywords" />
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -224,13 +224,17 @@ ul#menu li a:hover
 { list-style: none;
   padding: 0px 0px 2px 0px; }
 
-.sidebar li a, .sidebar li a:hover
+.sidebar li a
 { text-decoration: none;
-  padding: 4px 0px 4px 35px;
-  display: block;
+  padding: 4px 0px 4px 0px;
+  {#display: block;#}
   background: transparent url("../static/img/arrow.png") no-repeat left center;
   color: #555;
   border: none;}
+
+.sidebar li .add_plus {
+    float: right;
+}
 
 .sidebar li a.selected, .sidebar li a:hover, .sidebar li a.selected:hover
 { color: #A4AA04;}
@@ -359,10 +363,10 @@ table tr td
         <!-- insert your sidebar items here -->
         <h3>Жанры</h3>
         <ul>
-            {% for item in context.genre %}
-                <li><a href="#">{{ item.name }}</a></li>
-            {% endfor %}
-                <li><a href="/AddGenre">+ Добавить жанр</a></li>
+            <li><a href="/ActorList">Актеры</a><a class="add_plus" href="/AddActor">+</a></li>
+            <li><a href="/DirectorList">Режиссеры</a><a class="add_plus" href="/AddDirector">+</a></li>
+            <li><a href="/GenreList">Жанры</a><a class="add_plus" href="/AddGenre">+</a></li>
+
         </ul>
 
         <h3>новости</h3>

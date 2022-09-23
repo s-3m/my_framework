@@ -15,7 +15,6 @@ class BananaFramework:
 
     def __call__(self, environ, start_response):
         path = environ['PATH_INFO']
-        # pprint(environ)
 
         if not path.endswith('/'):
             path = path + '/'
@@ -35,11 +34,9 @@ class BananaFramework:
         if method == 'POST':
             data = PostRequest().get_request_param(environ)
             request['data'] = BananaFramework.decode_data(data)
-            print(f'Input POST request with params: {request["data"]}')
         if method == 'GET':
             data = GetRequest().get_request_param(environ)
             request['request_param'] = BananaFramework.decode_data(data)
-            print(f'Input GET request with params: {request["request_param"]}')
 
         if self.fronts is not None:
             for front in self.fronts:

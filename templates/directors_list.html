@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div id="content">
+    <h1>Режиссеры</h1>
+        <div style="display: flex; justify-content: flex-end"><a href="/AddDirector">+ Добавить режиссера</a></div>
+
+        {% if objects_list %}
+            <div class="director_container">
+                {% for director in objects_list %}
+                    <div class="director_item"  style="margin-bottom: 10px">
+                        {{ director }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

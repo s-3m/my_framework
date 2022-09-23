@@ -1,10 +1,13 @@
 from framework.templator import *
 from patterns.creational import Engine, Logger, FilmFactory
 from patterns.structural import AppRoute, Debug
+from patterns.behavioral import SmsNotifier, EmailNotifier, CreateView, ListView, Serializer
 
 engine = Engine()
 logger = Logger('main')
 routes = {}
+sms_notif = SmsNotifier()
+email_notif = EmailNotifier()
 
 
 @AppRoute(url='/')
@@ -19,7 +22,6 @@ class Index:
 
 class Contact:
     def __call__(self, request):
-        print(routes)
         context = {'title': 'Контакты', 'genre': engine.genre}
         return '200 OK', render('contact.html', request=request, context=context)
 
@@ -41,10 +43,10 @@ class Catalog:
     def __call__(self, request):
         context = {
             'title': 'Каталог',
-            'genre': engine.genre
+            'genre': engine.genre,
+            'actors': engine.actor
         }
         objects_list = engine.films
-        print(objects_list)
         return '200 OK', render('catalog.html', request=request, context=context, objects_list=objects_list)
 
     def __repr__(self):
@@ -75,7 +77,9 @@ class CreateFilm:
         context = {
             'title': 'Новый фильм',
             'genre': engine.genre,
-            'film_types': FilmFactory.types.keys()
+            'film_types': FilmFactory.types.keys(),
+            'actors': engine.actor,
+            'directors': engine.director
         }
         if request['method'] == 'POST':
             film_type = request['data']['types_list']
@@ -86,10 +90,14 @@ class CreateFilm:
             genre = engine.find_genre_by_name(genre_list)
             new_film = engine.create_film(film_type, film_name, film_actors, film_director, genre)
             engine.films.append(new_film)
-            print('------------', engine.films)
             context['title'] = 'Каталог'
             obj_list = engine.films
             logger.log(f'Создан фильм - {film_name}')
+
+            new_film.observers.append(sms_notif)
+            new_film.observers.append(email_notif)
+            new_film.notify()
+
             return '200 OK', render('catalog.html', request=request, context=context, objects_list=obj_list)
         return '200 OK', render('create_film.html', request=request, context=context)
 
@@ -115,3 +123,67 @@ class CopyFilm:
             return '200 OK', render('catalog.html', request=request, objects_list=obj_list, context=context)
         except KeyError:
             return '200 OK', 'No films have been added yet'
+
+
+@AppRoute(url='/AddActor/')
+class CreateActor(CreateView):
+    template_name = 'create_actor.html'
+    success_url = 'actor_list.html'
+
+    def create_obj(self, data):
+        actor_name = data['name']
+        actor_surname = data['surname']
+        new_actor = engine.create_person('actor', actor_name, actor_surname)
+        engine.actor.append(new_actor)
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Новый актер'
+        context['objects_list'] = engine.actor
+        return context
+
+
+@AppRoute(url='/ActorList/')
+class ActorList(ListView):
+    template_name = 'actor_list.html'
+    queryset = engine.actor
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Актеры'
+        return context
+
+
+@AppRoute(url='/AddDirector/')
+class CreateDirector(CreateView):
+    template_name = 'create_actor.html'
+    success_url = 'directors_list.html'
+
+    def create_obj(self, data):
+        dir_name = data['name']
+        dir_surname = data['surname']
+        new_dir = engine.create_person('director', dir_name, dir_surname)
+        engine.director.append(new_dir)
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Новый режиссер'
+        context['objects_list'] = engine.director
+        return context
+
+
+@AppRoute(url='/DirectorList/')
+class DirectorList(ListView):
+    template_name = 'directors_list.html'
+    queryset = engine.director
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Режиссеры'
+        return context
+
+
+@AppRoute(url='/api/')
+class FilmsApi:
+    def __call__(self, request):
+        return '200 OK', Serializer(engine.films).save()
