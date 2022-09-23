@@ -128,7 +128,7 @@ class CopyFilm:
 @AppRoute(url='/AddActor/')
 class CreateActor(CreateView):
     template_name = 'create_actor.html'
-    success_url = 'actor_list.html'
+    success_url = '/ActorList/'
 
     def create_obj(self, data):
         actor_name = data['name']
@@ -157,7 +157,7 @@ class ActorList(ListView):
 @AppRoute(url='/AddDirector/')
 class CreateDirector(CreateView):
     template_name = 'create_actor.html'
-    success_url = 'directors_list.html'
+    success_url = '/DirectorList/'
 
     def create_obj(self, data):
         dir_name = data['name']

@@ -26,7 +26,7 @@ class BananaFramework:
         else:
             view = PageNotFound()
 
-        request = {}
+        request = {'routes_dict': self.routes_dict}
 
         method = environ['REQUEST_METHOD']
         request['method'] = method
