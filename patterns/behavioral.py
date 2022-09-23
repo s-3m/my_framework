@@ -40,7 +40,8 @@ class TemplateView:
         template_name = self.get_template()
         context = self.get_context_data()
         if success_url:
-            template_name = success_url
+            view = request['routes_dict'][success_url]
+            return view(request)
         return '200 OK', render(template_name, **context, request=request)
 
     def __call__(self, request):
