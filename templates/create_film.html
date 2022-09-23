@@ -14,8 +14,16 @@
             {% endfor %}
         </select></p>
         <p><span>Название</span><input class="contact" type="text" name="film_name" value="" /></p>
-        <p><span>Актерский состав</span><input class="contact" type="text" name="film_actors" value="" /></p>
-        <p><span>Режиссер</span><input class="contact" type="text" name="film_director" value="" /></p>
+        <p><span>Актерский состав</span><select class="contact" name="film_actors">
+            {% for actor in context.actors %}
+                <option>{{ actor }}</option>
+            {% endfor %}
+        </select></p>
+        <p><span>Режиссер</span><select class="contact" name="film_director">
+            {% for director in context.directors %}
+                <option>{{ director }}</option>
+            {% endfor %}
+        </select></p>
         <p><span>Жанр</span><select class="contact" name="genre_list">
             {% for item in context.genre %}
                 <option>{{ item.name }}</option>

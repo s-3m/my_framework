@@ -1,11 +1,16 @@
 from copy import deepcopy
 from quopri import decodestring
 
+from patterns.behavioral import Subject
+
 
 class AbstractPerson:
     def __init__(self, name, surname):
         self.name = name
         self.surname = surname
+
+    def __str__(self):
+        return f'{self.name} {self.surname}'
 
 
 class Actor(AbstractPerson):
@@ -45,13 +50,16 @@ class FilmPrototype:
         return deepcopy(self)
 
 
-class Film(FilmPrototype):
+class Film(FilmPrototype, Subject):
     def __init__(self, name, actor, director, genre: Genre):
+        super().__init__()
         self.name = name
         self.actor = actor
         self.director = director
         self.genre = genre
+        self.films = []
         self.genre.films.append(self)
+        self.films.append(self)
 
 
 class ThreeDFilm(Film):
@@ -136,4 +144,3 @@ class Logger(metaclass=Singleton):
     @staticmethod
     def log(text):
         print('log--->', text)
-

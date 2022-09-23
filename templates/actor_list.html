@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div id="content">
+    <h1>Актеры</h1>
+        <div style="display: flex; justify-content: flex-end"><a href="/AddActor">+ Добавить актера</a></div>
+
+        {% if objects_list %}
+            <div class="actor_container">
+                {% for actor in objects_list %}
+                    <div class="actor_item"  style="margin-bottom: 10px">
+                        {{ actor }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
