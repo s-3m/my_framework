@@ -1,13 +1,16 @@
 from framework.templator import *
-from patterns.creational import Engine, Logger, FilmFactory
+from patterns.creational import Engine, Logger, FilmFactory, MapperRegistry
 from patterns.structural import AppRoute, Debug
 from patterns.behavioral import SmsNotifier, EmailNotifier, CreateView, ListView, Serializer
+from patterns.architectural_unut_of_work import UnitOfWork
 
 engine = Engine()
 logger = Logger('main')
 routes = {}
 sms_notif = SmsNotifier()
 email_notif = EmailNotifier()
+UnitOfWork.new_current()
+UnitOfWork.get_current().set_mapper_registry(MapperRegistry)
 
 
 @AppRoute(url='/')
@@ -39,67 +42,126 @@ class About:
 
 
 @AppRoute(url='/catalog/')
-class Catalog:
-    def __call__(self, request):
-        context = {
-            'title': 'Каталог',
-            'genre': engine.genre,
-            'actors': engine.actor
-        }
-        objects_list = engine.films
-        return '200 OK', render('catalog.html', request=request, context=context, objects_list=objects_list)
+class Catalog(ListView):
+    template_name = 'catalog.html'
 
-    def __repr__(self):
-        return self.__class__.__name__
+    def get_queryset(self):
+        mapper = MapperRegistry.get_current_mapper('film')
+        return mapper.all()
 
-
-class CreateGenre:
-    @Debug('create_genre')
-    def __call__(self, request):
-        logger.log('Создание нового жанра')
-        context = {
-            'title': 'Новый жанр',
-            'genre': engine.genre
-        }
-        if request['method'] == 'POST':
-            genre_name = request['data']['genre_name']
-            new_genre = engine.create_genre(genre_name)
-            engine.genre.append(new_genre)
-            context = {'genre': engine.genre, 'title': 'Главная'}
-            logger.log(f'Создан жанр {genre_name}')
-            return '200 OK', render('index.html', context=context, request=request)
-        return '200 OK', render('create_genre.html', request=request, context=context)
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Каталог'
+        return context
 
 
-class CreateFilm:
-    def __call__(self, request):
-        logger.log(f'Создание нового фильма')
-        context = {
-            'title': 'Новый фильм',
-            'genre': engine.genre,
-            'film_types': FilmFactory.types.keys(),
-            'actors': engine.actor,
-            'directors': engine.director
-        }
-        if request['method'] == 'POST':
-            film_type = request['data']['types_list']
-            film_name = request['data']['film_name']
-            film_actors = request['data']['film_actors']
-            film_director = request['data']['film_director']
-            genre_list = request['data']['genre_list']
-            genre = engine.find_genre_by_name(genre_list)
-            new_film = engine.create_film(film_type, film_name, film_actors, film_director, genre)
-            engine.films.append(new_film)
-            context['title'] = 'Каталог'
-            obj_list = engine.films
-            logger.log(f'Создан фильм - {film_name}')
 
-            new_film.observers.append(sms_notif)
-            new_film.observers.append(email_notif)
-            new_film.notify()
+    # def __call__(self, request):
+    #     context = {
+    #         'title': 'Каталог',
+    #         'genre': engine.genre,
+    #         'actors': engine.actor
+    #     }
+    #     objects_list = engine.films
+    #     return '200 OK', render('catalog.html', request=request, context=context, objects_list=objects_list)
+    #
+    # def __repr__(self):
+    #     return self.__class__.__name__
 
-            return '200 OK', render('catalog.html', request=request, context=context, objects_list=obj_list)
-        return '200 OK', render('create_film.html', request=request, context=context)
+
+class CreateGenre(CreateView):
+    template_name = 'create_genre.html'
+    success_url = '/GenreList/'
+
+    def create_obj(self, data):
+        genre_name = data['genre_name']
+        new_genre = engine.create_genre(genre_name)
+        engine.genre.append(new_genre)
+        new_genre.mark_new()
+        UnitOfWork.get_current().commit()
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Новый жанр'
+        mapper = MapperRegistry.get_current_mapper('genre')
+        context['objects_list'] = mapper.all()
+        return context
+
+
+@AppRoute(url='/GenreList/')
+class GenreList(ListView):
+    template_name = 'genre_list.html'
+
+    def get_queryset(self):
+        mapper = MapperRegistry.get_current_mapper('genre')
+        return mapper.all()
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Жанры'
+        return context
+
+
+class CreateFilm(CreateView):
+    template_name = 'create_film.html'
+    success_url = '/catalog/'
+
+    def create_obj(self, data):
+        film_type = data['types_list']
+        film_name = data['film_name']
+        film_actors = data['film_actors']
+        film_director = data['film_director']
+        genre_list = data['genre_list']
+        mapper_genre = MapperRegistry.get_current_mapper('genre')
+        genre = mapper_genre.find_by_name(genre_list)
+        new_film = engine.create_film(film_type, film_name, film_actors, film_director, genre)
+        engine.films.append(new_film)
+        new_film.mark_new()
+        UnitOfWork.get_current().commit()
+        new_film.observers.append(sms_notif)
+        new_film.observers.append(email_notif)
+        new_film.notify()
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Новый фильм'
+        mapper_actor = MapperRegistry.get_current_mapper('actor')
+        mapper_dir = MapperRegistry.get_current_mapper('director')
+        mapper_genre = MapperRegistry.get_current_mapper('genre')
+        context['genre'] = mapper_genre.all()
+        context['actors'] = mapper_actor.all()
+        context['directors'] = mapper_dir.all()
+        context['film_types'] = FilmFactory.types.keys()
+        return context
+
+    # def __call__(self, request):
+    #     logger.log(f'Создание нового фильма')
+    #     context = {
+    #         'title': 'Новый фильм',
+    #         'genre': engine.genre,
+    #         'film_types': FilmFactory.types.keys(),
+    #         'actors': engine.actor,
+    #         'directors': engine.director
+    #     }
+    #     if request['method'] == 'POST':
+    #         film_type = request['data']['types_list']
+    #         film_name = request['data']['film_name']
+    #         film_actors = request['data']['film_actors']
+    #         film_director = request['data']['film_director']
+    #         genre_list = request['data']['genre_list']
+    #         genre = engine.find_genre_by_name(genre_list)
+    #         new_film = engine.create_film(film_type, film_name, film_actors, film_director, genre)
+    #         engine.films.append(new_film)
+    #         context['title'] = 'Каталог'
+    #         obj_list = engine.films
+    #         logger.log(f'Создан фильм - {film_name}')
+
+        #     new_film.observers.append(sms_notif)
+        #     new_film.observers.append(email_notif)
+        #     new_film.notify()
+        #
+        #     return '200 OK', render('catalog.html', request=request, context=context, objects_list=obj_list)
+        # return '200 OK', render('create_film.html', request=request, context=context)
 
 
 class CopyFilm:
@@ -135,18 +197,24 @@ class CreateActor(CreateView):
         actor_surname = data['surname']
         new_actor = engine.create_person('actor', actor_name, actor_surname)
         engine.actor.append(new_actor)
+        new_actor.mark_new()
+        UnitOfWork.get_current().commit()
 
     def get_context_data(self):
         context = super().get_context_data()
         context['title'] = 'Новый актер'
-        context['objects_list'] = engine.actor
+        mapper = MapperRegistry.get_current_mapper('actor')
+        context['objects_list'] = mapper.all()
         return context
 
 
 @AppRoute(url='/ActorList/')
 class ActorList(ListView):
     template_name = 'actor_list.html'
-    queryset = engine.actor
+
+    def get_queryset(self):
+        mapper = MapperRegistry.get_current_mapper('actor')
+        return mapper.all()
 
     def get_context_data(self):
         context = super().get_context_data()
@@ -164,18 +232,24 @@ class CreateDirector(CreateView):
         dir_surname = data['surname']
         new_dir = engine.create_person('director', dir_name, dir_surname)
         engine.director.append(new_dir)
+        new_dir.mark_new()
+        UnitOfWork.get_current().commit()
 
     def get_context_data(self):
         context = super().get_context_data()
         context['title'] = 'Новый режиссер'
-        context['objects_list'] = engine.director
+        mapper = MapperRegistry.get_current_mapper('director')
+        context['objects_list'] = mapper.all()
         return context
 
 
 @AppRoute(url='/DirectorList/')
 class DirectorList(ListView):
     template_name = 'directors_list.html'
-    queryset = engine.director
+
+    def get_queryset(self):
+        mapper = MapperRegistry.get_current_mapper('director')
+        return mapper.all()
 
     def get_context_data(self):
         context = super().get_context_data()

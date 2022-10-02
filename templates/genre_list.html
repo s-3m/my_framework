@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div id="content">
+    <h1>Актеры</h1>
+        <div style="display: flex; justify-content: flex-end"><a href="/AddGenre">+ Добавить жанр</a></div>
+
+        {% if objects_list %}
+            <div class="genre_container">
+                {% for genre in objects_list %}
+                    <div class="genre_item"  style="margin-bottom: 10px">
+                        {{ genre.name }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

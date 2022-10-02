@@ -9,24 +9,24 @@
       <div class="form_settings">
 
         <p><span>Категория</span><select class="contact" name="types_list">
-            {% for item in context.film_types %}
+            {% for item in film_types %}
                 <option>{{ item }}</option>
             {% endfor %}
         </select></p>
         <p><span>Название</span><input class="contact" type="text" name="film_name" value="" /></p>
         <p><span>Актерский состав</span><select class="contact" name="film_actors">
-            {% for actor in context.actors %}
+            {% for actor in actors %}
                 <option>{{ actor }}</option>
             {% endfor %}
         </select></p>
         <p><span>Режиссер</span><select class="contact" name="film_director">
-            {% for director in context.directors %}
+            {% for director in directors %}
                 <option>{{ director }}</option>
             {% endfor %}
         </select></p>
         <p><span>Жанр</span><select class="contact" name="genre_list">
-            {% for item in context.genre %}
-                <option>{{ item.name }}</option>
+            {% for item in genre %}
+                <option>{{ item }}</option>
             {% endfor %}
         </select></p>
         <p style="padding-top: 15px"><span>&nbsp;</span><input class="submit" type="submit" name="add_film_submitted" value="Отправить" /></p>

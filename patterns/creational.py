@@ -1,7 +1,9 @@
 from copy import deepcopy
 from quopri import decodestring
+from sqlite3 import connect
 
 from patterns.behavioral import Subject
+from patterns.architectural_unut_of_work import DomainObject
 
 
 class AbstractPerson:
@@ -13,11 +15,11 @@ class AbstractPerson:
         return f'{self.name} {self.surname}'
 
 
-class Actor(AbstractPerson):
+class Actor(AbstractPerson, DomainObject):
     post = 'actor'
 
 
-class Director(AbstractPerson):
+class Director(AbstractPerson, DomainObject):
     post = 'director'
 
 
@@ -32,7 +34,7 @@ class PersonFactory:
         return cls.types[type_](name, surname)
 
 
-class Genre:
+class Genre(DomainObject):
     auto_id = 0
 
     def __init__(self, name):
@@ -40,6 +42,9 @@ class Genre:
         Genre.auto_id += 1
         self.name = name
         self.films = []
+
+    def __str__(self):
+        return self.name
 
     def genre_count(self):
         return len(self.films)
@@ -50,7 +55,7 @@ class FilmPrototype:
         return deepcopy(self)
 
 
-class Film(FilmPrototype, Subject):
+class Film(FilmPrototype, Subject, DomainObject):
     def __init__(self, name, actor, director, genre: Genre):
         super().__init__()
         self.name = name
@@ -144,3 +149,233 @@ class Logger(metaclass=Singleton):
     @staticmethod
     def log(text):
         print('log--->', text)
+
+
+class FilmsMapper:
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = 'films'
+
+    def all(self):
+        sql_text = f'SELECT * FROM {self.tablename}'
+        self.cursor.execute(sql_text)
+        result = []
+
+        for item in self.cursor.fetchall():
+            id, name, actor, director, genre = item
+            genre_obj = Engine.create_genre(genre)
+            item = Film(name, actor, director, genre_obj)
+            item.id = id
+            result.append(item)
+        return result
+
+    def find_by_id(self, id):
+        sql_text = f"SELECT id, type, name, actor, director, genre FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(sql_text, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return Engine.create_film(*result)
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def insert(self, obj):
+        sql_text = f"INSERT INTO {self.tablename} (name, actor, director, genre) VALUES (?, ?, ?, ?)"
+        self.cursor.execute(sql_text, (obj.name, obj.actor, obj.director, obj.genre.name))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        sql_text = f"UPDATE {self.tablename} SET name=?, actor=?, director=?, genre=? WHERE id=?"
+        self.cursor.execute(sql_text, (obj.name, obj.actor, obj.director, obj.genre))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        sql_text = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(sql_text, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+
+
+class BasePersonMapper:
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = ''
+        self.instance = None
+
+    def all(self):
+        sql_text = f'SELECT * FROM {self.tablename}'
+        self.cursor.execute(sql_text)
+        result = []
+
+        for item in self.cursor.fetchall():
+            id, name, surname = item
+            item = self.instance(name, surname)
+            item.id = id
+            result.append(item)
+        return result
+
+    def find_by_id(self, id):
+        sql_text = f"SELECT id, name, surname FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(sql_text, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return self.instance(*result)
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def insert(self, obj):
+        sql_text = f"INSERT INTO {self.tablename} (name, surname) VALUES (?, ?)"
+        self.cursor.execute(sql_text, (obj.name, obj.surname))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        sql_text = f"UPDATE {self.tablename} SET name=?, surname=? WHERE id=?"
+        self.cursor.execute(sql_text, (obj.name, obj.surname, obj.id))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        sql_text = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(sql_text, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+
+class ActorMapper(BasePersonMapper):
+    def __init__(self, connection):
+        super().__init__(connection)
+        self.instance = Actor
+        self.tablename = 'actors'
+
+
+class DirectorMapper(BasePersonMapper):
+    def __init__(self, connection):
+        super().__init__(connection)
+        self.instance = Director
+        self.tablename = 'directors'
+
+
+class GenreMapper:
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = 'genres'
+
+    def all(self):
+        statement = f'SELECT * from {self.tablename}'
+        self.cursor.execute(statement)
+        result = []
+        for item in self.cursor.fetchall():
+            id, name = item
+            student = Genre(name)
+            student.id = id
+            result.append(student)
+        return result
+
+    def find_by_id(self, id):
+        statement = f"SELECT id, name FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return Genre(*result)
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def find_by_name(self, name):
+        statement = f"SELECT id, name FROM {self.tablename} WHERE name=?"
+        self.cursor.execute(statement, (name,))
+        result = self.cursor.fetchone()
+        if result:
+            return Genre(result[1])
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+
+    def insert(self, obj):
+        statement = f"INSERT INTO {self.tablename} (name) VALUES (?)"
+        self.cursor.execute(statement, (obj.name,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        statement = f"UPDATE {self.tablename} SET name=? WHERE id=?"
+
+        self.cursor.execute(statement, (obj.name, obj.id))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        statement = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+
+connection = connect('my_base.sqlite')
+
+
+class MapperRegistry:
+    mappers = {
+        'actor': ActorMapper,
+        'director': DirectorMapper,
+        'genre': GenreMapper,
+        'film': FilmsMapper
+    }
+
+    @staticmethod
+    def get_mapper(obj):
+        if isinstance(obj, Actor):
+            return ActorMapper(connection)
+        elif isinstance(obj, Director):
+            return DirectorMapper(connection)
+        elif isinstance(obj, Genre):
+            return GenreMapper(connection)
+        elif isinstance(obj, Film):
+            return FilmsMapper(connection)
+
+    @staticmethod
+    def get_current_mapper(name):
+        return MapperRegistry.mappers[name](connection)
+
+
+class DbCommitException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db commit error: {message}')
+
+
+class DbUpdateException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db update error: {message}')
+
+
+class DbDeleteException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db delete error: {message}')
+
+
+class RecordNotFoundException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Record not found: {message}')
