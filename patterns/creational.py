@@ -55,7 +55,7 @@ class FilmPrototype:
         return deepcopy(self)
 
 
-class Film(FilmPrototype, Subject):
+class Film(FilmPrototype, Subject, DomainObject):
     def __init__(self, name, actor, director, genre: Genre):
         super().__init__()
         self.name = name
@@ -149,6 +149,60 @@ class Logger(metaclass=Singleton):
     @staticmethod
     def log(text):
         print('log--->', text)
+
+
+class FilmsMapper:
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = 'films'
+
+    def all(self):
+        sql_text = f'SELECT * FROM {self.tablename}'
+        self.cursor.execute(sql_text)
+        result = []
+
+        for item in self.cursor.fetchall():
+            id, name, actor, director, genre = item
+            genre_obj = Engine.create_genre(genre)
+            item = Film(name, actor, director, genre_obj)
+            item.id = id
+            result.append(item)
+        return result
+
+    def find_by_id(self, id):
+        sql_text = f"SELECT id, type, name, actor, director, genre FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(sql_text, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return Engine.create_film(*result)
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def insert(self, obj):
+        sql_text = f"INSERT INTO {self.tablename} (name, actor, director, genre) VALUES (?, ?, ?, ?)"
+        self.cursor.execute(sql_text, (obj.name, obj.actor, obj.director, obj.genre.name))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        sql_text = f"UPDATE {self.tablename} SET name=?, actor=?, director=?, genre=? WHERE id=?"
+        self.cursor.execute(sql_text, (obj.name, obj.actor, obj.director, obj.genre))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        sql_text = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(sql_text, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
 
 
 class BasePersonMapper:
@@ -287,7 +341,8 @@ class MapperRegistry:
     mappers = {
         'actor': ActorMapper,
         'director': DirectorMapper,
-        'genre': GenreMapper
+        'genre': GenreMapper,
+        'film': FilmsMapper
     }
 
     @staticmethod
@@ -298,6 +353,8 @@ class MapperRegistry:
             return DirectorMapper(connection)
         elif isinstance(obj, Genre):
             return GenreMapper(connection)
+        elif isinstance(obj, Film):
+            return FilmsMapper(connection)
 
     @staticmethod
     def get_current_mapper(name):

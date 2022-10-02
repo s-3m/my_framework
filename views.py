@@ -42,18 +42,31 @@ class About:
 
 
 @AppRoute(url='/catalog/')
-class Catalog:
-    def __call__(self, request):
-        context = {
-            'title': 'Каталог',
-            'genre': engine.genre,
-            'actors': engine.actor
-        }
-        objects_list = engine.films
-        return '200 OK', render('catalog.html', request=request, context=context, objects_list=objects_list)
+class Catalog(ListView):
+    template_name = 'catalog.html'
 
-    def __repr__(self):
-        return self.__class__.__name__
+    def get_queryset(self):
+        mapper = MapperRegistry.get_current_mapper('film')
+        return mapper.all()
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context['title'] = 'Каталог'
+        return context
+
+
+
+    # def __call__(self, request):
+    #     context = {
+    #         'title': 'Каталог',
+    #         'genre': engine.genre,
+    #         'actors': engine.actor
+    #     }
+    #     objects_list = engine.films
+    #     return '200 OK', render('catalog.html', request=request, context=context, objects_list=objects_list)
+    #
+    # def __repr__(self):
+    #     return self.__class__.__name__
 
 
 class CreateGenre(CreateView):
@@ -91,6 +104,7 @@ class GenreList(ListView):
 
 class CreateFilm(CreateView):
     template_name = 'create_film.html'
+    success_url = '/catalog/'
 
     def create_obj(self, data):
         film_type = data['types_list']
@@ -102,6 +116,8 @@ class CreateFilm(CreateView):
         genre = mapper_genre.find_by_name(genre_list)
         new_film = engine.create_film(film_type, film_name, film_actors, film_director, genre)
         engine.films.append(new_film)
+        new_film.mark_new()
+        UnitOfWork.get_current().commit()
         new_film.observers.append(sms_notif)
         new_film.observers.append(email_notif)
         new_film.notify()
